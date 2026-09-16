@@ -11,7 +11,7 @@
 
 | 外掛 | 簡述 |
 |---|---|
-| _(尚未上架,敬請期待)_ | |
+| [smoothie](illustrator/smoothie/) | 帶有曲率邏輯的圓角特效外掛 |
 
 ### Glyphs
 
