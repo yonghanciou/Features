@@ -1,0 +1,9 @@
+# Illustrator 外掛
+
+這裡存放給 Adobe Illustrator 用的外掛,每個外掛一個子資料夾。皆以 macOS 為核心平台開發。
+
+| 外掛 | 簡述 |
+|---|---|
+| [smoothie](smoothie/) | 帶有曲率邏輯的圓角特效外掛 |
+
+新增外掛時請參考根目錄的 [PLUGIN_TEMPLATE.md](../PLUGIN_TEMPLATE.md)。
