@@ -18,13 +18,14 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 
 **不想自己編譯的話**,到 [Releases](../../releases) 下載編譯好的 `Smoothie-vX.X.X-macOS.zip`:
 
-1. 解壓縮得到 `Smoothie.aip`,移到 `/Applications/Adobe Illustrator [版本]/Plug-ins.localized/`。
-2. 目前是 ad-hoc 簽章(不是正式 Apple Developer ID),第一次開啟 Illustrator 時 macOS 可能會擋下這個外掛。如果跳出「無法打開,因為無法驗證開發者」之類的訊息,打開「終端機」執行:
-   ```bash
-   xattr -d com.apple.quarantine "/Applications/Adobe Illustrator [版本]/Plug-ins.localized/Smoothie.aip"
-   ```
-   或是到「系統設定 > 隱私權與安全性」捲到最下面按「仍要打開」。
-3. 重新啟動 Illustrator,`效果 > SFF Features > Smoothie...` 應該就會出現。
+1. 解壓縮得到 `Smoothie.aip`(**不要雙擊它**——它不是應用程式,雙擊只會跳出「無法打開」,雙擊之後按「強制打開」也不會有反應,是正常的,直接跳下一步),移到 `/Applications/Adobe Illustrator [版本]/Plug-ins.localized/`。
+2. 目前是 ad-hoc 簽章(不是正式 Apple Developer ID),重新啟動 Illustrator 時 macOS 可能會擋下這個外掛。如果 `效果` 選單裡沒有出現 `SFF Features`,擇一處理:
+   - **系統設定**:打開「系統設定 > 隱私權與安全性」,捲到最下面應該會看到「已阻擋『Smoothie.aip』以保護你的 Mac」,按「強制打開」,跳出的確認視窗再按一次「打開」。
+   - **終端機**(一次到位,不會再跳警告):
+     ```bash
+     xattr -d com.apple.quarantine "/Applications/Adobe Illustrator [版本]/Plug-ins.localized/Smoothie.aip"
+     ```
+3. 完全結束 Illustrator(⌘Q)再重新打開,`效果 > SFF Features > Smoothie...` 應該就會出現。
 
 **自己編譯**:這個資料夾放的是外掛原始碼(`src/`),需要搭配 Adobe Illustrator C++ Plug-in SDK 自行編譯成 `.aip`。
 
