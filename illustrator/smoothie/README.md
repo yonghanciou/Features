@@ -16,9 +16,19 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 
 ## 安裝方式
 
-這個資料夾放的是外掛原始碼(`src/`),需要搭配 Adobe Illustrator C++ Plug-in SDK 自行編譯成 `.aip` 才能安裝進 Illustrator。
+**不想自己編譯的話**,到 [Releases](../../releases) 下載編譯好的 `Smoothie-vX.X.X-macOS.zip`:
 
-不想編譯的話,`src/Smoothie.jsx` 是免安裝的獨立版本:Illustrator 的 `檔案 > 指令碼 > Smoothie.jsx` 就能直接對選取路徑套用平滑圓角(是破壞性的,不會出現在外觀面板裡回頭調整,只是輕量替代方案)。
+1. 解壓縮得到 `Smoothie.aip`,移到 `/Applications/Adobe Illustrator [版本]/Plug-ins.localized/`。
+2. 目前是 ad-hoc 簽章(不是正式 Apple Developer ID),第一次開啟 Illustrator 時 macOS 可能會擋下這個外掛。如果跳出「無法打開,因為無法驗證開發者」之類的訊息,打開「終端機」執行:
+   ```bash
+   xattr -d com.apple.quarantine "/Applications/Adobe Illustrator [版本]/Plug-ins.localized/Smoothie.aip"
+   ```
+   或是到「系統設定 > 隱私權與安全性」捲到最下面按「仍要打開」。
+3. 重新啟動 Illustrator,`效果 > SFF Features > Smoothie...` 應該就會出現。
+
+**自己編譯**:這個資料夾放的是外掛原始碼(`src/`),需要搭配 Adobe Illustrator C++ Plug-in SDK 自行編譯成 `.aip`。
+
+**不想裝外掛**:`src/Smoothie.jsx` 是免安裝的獨立版本:Illustrator 的 `檔案 > 指令碼 > Smoothie.jsx` 就能直接對選取路徑套用平滑圓角(是破壞性的,不會出現在外觀面板裡回頭調整,只是輕量替代方案)。
 
 ## 使用方法
 
