@@ -16,7 +16,7 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 
 ## 安裝方式
 
-**不想自己編譯的話**,到 [Releases](yonghanciou/Features/releases) 下載編譯好的 `Smoothie-vX.X.X-macOS.zip`:
+**不想自己編譯的話**,到 [Releases](https://github.com/yonghanciou/Features/releases) 下載編譯好的 `Smoothie-vX.X.X-macOS.zip`:
 
 1. 解壓縮得到 `Smoothie.aip`(**不要雙擊它**——它不是應用程式,雙擊只會跳出「無法打開」,雙擊之後按「強制打開」也不會有反應,是正常的,直接跳下一步),移到 `/Applications/Adobe Illustrator [版本]/Plug-ins.localized/`。
 2. 目前是 ad-hoc 簽章(不是正式 Apple Developer ID),重新啟動 Illustrator 時 macOS 可能會擋下這個外掛。如果 `效果` 選單裡沒有出現 `SFF Features`,擇一處理:
