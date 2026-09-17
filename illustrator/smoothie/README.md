@@ -2,8 +2,11 @@
 
 Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「圓角」效果更細膩、可調範圍更大的轉角平滑。
 
+[![下載 Smoothie.aip](https://img.shields.io/badge/下載-Smoothie.aip-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/latest)
+
+> **⬆️ 這裡不是原始碼倉庫的用法——一般使用者請直接點上面的按鈕到 [Releases](https://github.com/yonghanciou/Features/releases/latest) 下載編譯好的 `.aip`,不用管下面的 `src/` 資料夾。** 步驟見下方「安裝方式」。
+
 ![Smoothie 對話框截圖](assets/dialog.png)
-<!-- 請把對話框截圖放到 assets/dialog.png(檔名對上就會自動顯示在這裡) -->
 
 ## 支援版本
 
@@ -42,10 +45,8 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 4. 按「確定」套用。效果會留在「外觀」面板裡,之後可以隨時雙擊再打開這個對話框重新調整參數。
 
 ![套用前後比較](assets/before-after.png)
-<!-- 請把套用前後的比較圖放到 assets/before-after.png -->
 
 ![曲率滑桿效果示範](assets/curvature-demo.gif)
-<!-- 如果有錄操作 GIF,放到 assets/curvature-demo.gif -->
 
 ## 已知問題
 
