@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Zurich Seq</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="panel-shell">
+    <div class="statusbar" id="statusbar">請先打開一個文件。</div>
+
+    <div class="content">
+      <div class="panel">
+        <div class="panel-title">預設</div>
+        <div class="row">
+          <select id="presetSel"><option value="">— 選擇預設 —</option></select>
+          <button id="presetSaveBtn" type="button" class="secondary icon-btn" title="儲存目前設定為新預設">
+            <svg viewBox="0 0 20 20"><path fill="currentColor" d="m16.25,9.25h-5.5V3.75c0-.41406-.33594-.75-.75-.75s-.75.33594-.75.75v5.5H3.75c-.41406,0-.75.33594-.75.75s.33594.75.75.75h5.5v5.5c0,.41406.33594.75.75.75s.75-.33594.75-.75v-5.5h5.5c.41406,0,.75-.33594.75-.75s-.33594-.75-.75-.75Z"/></svg>
+          </button>
+          <button id="presetDeleteBtn" type="button" class="secondary icon-btn" title="刪除選取的預設" disabled>
+            <svg viewBox="0 0 20 20"><path fill="currentColor" d="m11.06061,10l5.20648-5.20605c.29297-.29297.29297-.76758,0-1.06055s-.76758-.29297-1.06055,0l-5.20654,5.20605L4.79346,3.7334c-.29297-.29297-.76758-.29297-1.06055,0s-.29297.76758,0,1.06055l5.20648,5.20605-5.20648,5.20605c-.29297.29297-.29297.76758,0,1.06055.14648.14648.33838.21973.53027.21973s.38379-.07324.53027-.21973l5.20654-5.20605,5.20654,5.20605c.14648.14648.33838.21973.53027.21973s.38379-.07324.53027-.21973c.29297-.29297.29297-.76758,0-1.06055l-5.20648-5.20605Z"/></svg>
+          </button>
+        </div>
+        <div class="row" id="presetSaveRow" style="display:none;">
+          <input type="text" id="presetNameInput" placeholder="預設名稱" />
+          <button id="presetSaveConfirmBtn" type="button" class="secondary btn-sm">確認</button>
+          <button id="presetSaveCancelBtn" type="button" class="secondary btn-sm">取消</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">範圍 ＆ 邊界</div>
+
+        <div class="subpanel">
+          <div class="row">
+            <label for="scopeSel">目標</label>
+            <select id="scopeSel">
+              <option value="Artboard" selected>工作區域</option>
+              <option value="Selection">選取範圍</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">邊界</div>
+          <div class="row"><label class="checkbox"><input type="checkbox" id="padEnable" checked /> 啟用內邊距</label></div>
+          <div class="row persiderow" id="padPerSideRow">
+            <span class="sidebox"><span>上</span><input id="p_t" type="number" step="0.1" value="10" /></span>
+            <span class="sidebox"><span>下</span><input id="p_b" type="number" step="0.1" value="10" /></span>
+            <span class="sidebox"><span>左</span><input id="p_l" type="number" step="0.1" value="10" /></span>
+            <span class="sidebox"><span>右</span><input id="p_r" type="number" step="0.1" value="10" /></span>
+            <label class="link-toggle" title="連結上下左右">
+              <input type="checkbox" id="p_link" checked />
+              <svg class="link-icon icon-linked" viewBox="0 0 20 20"><path fill="currentColor" d="m10,19c-2.06787,0-3.75-1.68213-3.75-3.75v-4.20898c0-2.06787,1.68213-3.75,3.75-3.75.2793,0,.55908.03125.83154.09277.40381.09082.65771.49219.56641.89648-.09082.4043-.48975.65967-.89648.56641-.16406-.03711-.33301-.05566-.50146-.05566-1.24072,0-2.25,1.00928-2.25,2.25v4.20898c0,1.24072,1.00928,2.25,2.25,2.25s2.25-1.00928,2.25-2.25v-1.70898c0-.41406.33594-.75.75-.75s.75.33594.75.75v1.70898c0,2.06787-1.68213,3.75-3.75,3.75Zm3.75-9.95898v-4.1582c0-2.06787-1.68213-3.75-3.75-3.75s-3.75,1.68213-3.75,3.75v1.6582c0,.41406.33594.75.75.75s.75-.33594.75-.75v-1.6582c0-1.24072,1.00928-2.25,2.25-2.25s2.25,1.00928,2.25,2.25v4.1582c0,1.24072-1.00928,2.25-2.25,2.25-.16846,0-.3374-.01855-.50146-.05566-.40283-.09229-.80518.1626-.89648.56641-.09131.4043.1626.80566.56641.89648.27246.06152.55225.09277.83154.09277,2.06787,0,3.75-1.68213,3.75-3.75Z"/></svg>
+              <svg class="link-icon icon-unlinked" viewBox="0 0 20 20"><path fill="currentColor" d="m18.25,19.02776c-.19238,0-.38379-.07324-.53027-.21973L1.21973,2.30803c-.29297-.29297-.29297-.76758,0-1.06055s.76758-.29297,1.06055,0l16.5,16.5c.29297.29297.29297.76758,0,1.06055-.14648.14648-.33789.21973-.53027.21973Z"/><path fill="currentColor" d="m12.99996,9.88903c-.41406,0-.75-.33594-.75-.75v-4.32907c0-1.25878-1.02343-2.28221-2.28221-2.28221-.86425,0-1.64452.47851-2.03612,1.24902-.18848.37011-.64062.51562-1.00878.3291-.36914-.18848-.5166-.63964-.3291-1.00878.64941-1.27636,1.94237-2.06932,3.374-2.06932,2.08592,0,3.7822,1.69628,3.7822,3.7822v4.32907c0,.41406-.33594.75-.75.75Z"/><path fill="currentColor" d="m10.03809,19.02776c-2.08887,0-3.78809-1.7002-3.78809-3.78906v-4.34961c0-.41406.33594-.75.75-.75s.75.33594.75.75v4.34961c0,1.26172,1.02637,2.28906,2.28809,2.28906.86133,0,1.6416-.47656,2.03613-1.24316.18848-.36816.6416-.51562,1.00977-.32422.36914.18945.51367.6416.32422,1.00977-.65332,1.26953-1.94434,2.05762-3.37012,2.05762Z"/></svg>
+            </label>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="row"><label class="checkbox"><input type="checkbox" id="drawFrame" checked /> 繪製外框線</label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">類型</div>
+        <div class="row">
+          <label for="typeSel">格線類型</label>
+          <select id="typeSel">
+            <option value="Swiss" selected>Swiss</option>
+            <option value="Equal">等分網格</option>
+          </select>
+        </div>
+        <div class="row inline">
+          <label class="checkbox"><input type="checkbox" id="liveChk" checked /> 即時預覽</label>
+          <span class="unitline">單位
+            <select id="unitSel">
+              <option value="mm" selected>mm</option>
+              <option value="pt">pt</option>
+            </select>
+          </span>
+        </div>
+      </div>
+
+      <div class="panel" id="swissPanel">
+        <div class="panel-title">Swiss</div>
+        <div class="subpanel">
+          <div class="row">
+            <label for="s_cols_r">欄數</label>
+            <input id="s_cols_r" type="range" min="1" max="64" step="1" value="12" />
+            <input id="s_cols_n" type="number" min="1" max="64" step="1" value="12" />
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="row">
+            <label for="s_rows_r">列數</label>
+            <input id="s_rows_r" type="range" min="1" max="64" step="1" value="12" />
+            <input id="s_rows_n" type="number" min="1" max="64" step="1" value="12" />
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">間距</div>
+          <div class="linked-pair">
+            <div class="linked-pair-rows">
+              <div class="row">
+                <label for="s_colGutter_r">欄間距</label>
+                <input id="s_colGutter_r" type="range" min="0" max="211.7" step="0.1" value="5" />
+                <input id="s_colGutter_n" type="number" step="0.1" value="5" />
+              </div>
+              <div class="row">
+                <label for="s_rowGutter_r">列間距</label>
+                <input id="s_rowGutter_r" type="range" min="0" max="211.7" step="0.1" value="5" />
+                <input id="s_rowGutter_n" type="number" step="0.1" value="5" />
+              </div>
+            </div>
+            <label class="link-toggle" title="連結欄列間距">
+              <input type="checkbox" id="s_gutLink" checked />
+              <svg class="link-icon icon-linked" viewBox="0 0 20 20"><path fill="currentColor" d="m10,19c-2.06787,0-3.75-1.68213-3.75-3.75v-4.20898c0-2.06787,1.68213-3.75,3.75-3.75.2793,0,.55908.03125.83154.09277.40381.09082.65771.49219.56641.89648-.09082.4043-.48975.65967-.89648.56641-.16406-.03711-.33301-.05566-.50146-.05566-1.24072,0-2.25,1.00928-2.25,2.25v4.20898c0,1.24072,1.00928,2.25,2.25,2.25s2.25-1.00928,2.25-2.25v-1.70898c0-.41406.33594-.75.75-.75s.75.33594.75.75v1.70898c0,2.06787-1.68213,3.75-3.75,3.75Zm3.75-9.95898v-4.1582c0-2.06787-1.68213-3.75-3.75-3.75s-3.75,1.68213-3.75,3.75v1.6582c0,.41406.33594.75.75.75s.75-.33594.75-.75v-1.6582c0-1.24072,1.00928-2.25,2.25-2.25s2.25,1.00928,2.25,2.25v4.1582c0,1.24072-1.00928,2.25-2.25,2.25-.16846,0-.3374-.01855-.50146-.05566-.40283-.09229-.80518.1626-.89648.56641-.09131.4043.1626.80566.56641.89648.27246.06152.55225.09277.83154.09277,2.06787,0,3.75-1.68213,3.75-3.75Z"/></svg>
+              <svg class="link-icon icon-unlinked" viewBox="0 0 20 20"><path fill="currentColor" d="m18.25,19.02776c-.19238,0-.38379-.07324-.53027-.21973L1.21973,2.30803c-.29297-.29297-.29297-.76758,0-1.06055s.76758-.29297,1.06055,0l16.5,16.5c.29297.29297.29297.76758,0,1.06055-.14648.14648-.33789.21973-.53027.21973Z"/><path fill="currentColor" d="m12.99996,9.88903c-.41406,0-.75-.33594-.75-.75v-4.32907c0-1.25878-1.02343-2.28221-2.28221-2.28221-.86425,0-1.64452.47851-2.03612,1.24902-.18848.37011-.64062.51562-1.00878.3291-.36914-.18848-.5166-.63964-.3291-1.00878.64941-1.27636,1.94237-2.06932,3.374-2.06932,2.08592,0,3.7822,1.69628,3.7822,3.7822v4.32907c0,.41406-.33594.75-.75.75Z"/><path fill="currentColor" d="m10.03809,19.02776c-2.08887,0-3.78809-1.7002-3.78809-3.78906v-4.34961c0-.41406.33594-.75.75-.75s.75.33594.75.75v4.34961c0,1.26172,1.02637,2.28906,2.28809,2.28906.86133,0,1.6416-.47656,2.03613-1.24316.18848-.36816.6416-.51562,1.00977-.32422.36914.18945.51367.6416.32422,1.00977-.65332,1.26953-1.94434,2.05762-3.37012,2.05762Z"/></svg>
+            </label>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-title">節奏</div>
+          <div class="linked-pair">
+            <div class="linked-pair-rows">
+              <div class="row">
+                <label for="s_baseH_r">水平基準線</label>
+                <input id="s_baseH_r" type="range" min="0" max="141.1" step="0.1" value="0" />
+                <input id="s_baseH_n" type="number" step="0.1" value="0" />
+              </div>
+              <div class="row">
+                <label for="s_baseV_r">垂直基準線</label>
+                <input id="s_baseV_r" type="range" min="0" max="141.1" step="0.1" value="0" />
+                <input id="s_baseV_n" type="number" step="0.1" value="0" />
+              </div>
+            </div>
+            <label class="link-toggle" title="連結水平/垂直基準線">
+              <input type="checkbox" id="s_baseLink" />
+              <svg class="link-icon icon-linked" viewBox="0 0 20 20"><path fill="currentColor" d="m10,19c-2.06787,0-3.75-1.68213-3.75-3.75v-4.20898c0-2.06787,1.68213-3.75,3.75-3.75.2793,0,.55908.03125.83154.09277.40381.09082.65771.49219.56641.89648-.09082.4043-.48975.65967-.89648.56641-.16406-.03711-.33301-.05566-.50146-.05566-1.24072,0-2.25,1.00928-2.25,2.25v4.20898c0,1.24072,1.00928,2.25,2.25,2.25s2.25-1.00928,2.25-2.25v-1.70898c0-.41406.33594-.75.75-.75s.75.33594.75.75v1.70898c0,2.06787-1.68213,3.75-3.75,3.75Zm3.75-9.95898v-4.1582c0-2.06787-1.68213-3.75-3.75-3.75s-3.75,1.68213-3.75,3.75v1.6582c0,.41406.33594.75.75.75s.75-.33594.75-.75v-1.6582c0-1.24072,1.00928-2.25,2.25-2.25s2.25,1.00928,2.25,2.25v4.1582c0,1.24072-1.00928,2.25-2.25,2.25-.16846,0-.3374-.01855-.50146-.05566-.40283-.09229-.80518.1626-.89648.56641-.09131.4043.1626.80566.56641.89648.27246.06152.55225.09277.83154.09277,2.06787,0,3.75-1.68213,3.75-3.75Z"/></svg>
+              <svg class="link-icon icon-unlinked" viewBox="0 0 20 20"><path fill="currentColor" d="m18.25,19.02776c-.19238,0-.38379-.07324-.53027-.21973L1.21973,2.30803c-.29297-.29297-.29297-.76758,0-1.06055s.76758-.29297,1.06055,0l16.5,16.5c.29297.29297.29297.76758,0,1.06055-.14648.14648-.33789.21973-.53027.21973Z"/><path fill="currentColor" d="m12.99996,9.88903c-.41406,0-.75-.33594-.75-.75v-4.32907c0-1.25878-1.02343-2.28221-2.28221-2.28221-.86425,0-1.64452.47851-2.03612,1.24902-.18848.37011-.64062.51562-1.00878.3291-.36914-.18848-.5166-.63964-.3291-1.00878.64941-1.27636,1.94237-2.06932,3.374-2.06932,2.08592,0,3.7822,1.69628,3.7822,3.7822v4.32907c0,.41406-.33594.75-.75.75Z"/><path fill="currentColor" d="m10.03809,19.02776c-2.08887,0-3.78809-1.7002-3.78809-3.78906v-4.34961c0-.41406.33594-.75.75-.75s.75.33594.75.75v4.34961c0,1.26172,1.02637,2.28906,2.28809,2.28906.86133,0,1.6416-.47656,2.03613-1.24316.18848-.36816.6416-.51562,1.00977-.32422.36914.18945.51367.6416.32422,1.00977-.65332,1.26953-1.94434,2.05762-3.37012,2.05762Z"/></svg>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="equalPanel" style="display:none">
+        <div class="panel-title">等分網格</div>
+        <div class="subpanel">
+          <div class="row">
+            <label for="e_div_r">等分 (N)</label>
+            <input id="e_div_r" type="range" min="2" max="48" step="1" value="6" />
+            <input id="e_div_n" type="number" min="2" max="48" step="1" value="6" />
+          </div>
+          <div class="row">
+            <label for="e_gutter_r">間距</label>
+            <input id="e_gutter_r" type="range" min="0" max="211.7" step="0.1" value="0" />
+            <input id="e_gutter_n" type="number" step="0.1" value="0" />
+          </div>
+        </div>
+        <div class="subpanel">
+          <div class="row"><label class="checkbox"><input type="checkbox" id="e_diags" /> 對角線</label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Output</div>
+        <div class="subpanel">
+          <div class="row"><label class="checkbox"><input type="checkbox" id="convChk" checked /> 轉換為參考線</label></div>
+          <div class="row">
+            <label for="strokeCtrl_r">筆畫 (pt)</label>
+            <input id="strokeCtrl_r" type="range" min="0" max="4" step="0.1" value="0.5" />
+            <input id="strokeCtrl_n" type="number" step="0.1" value="0.5" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button id="previewBtn" type="button" class="secondary">預覽</button>
+      <button id="clearBtn" type="button" class="secondary">清除預覽</button>
+      <button id="clearAppliedBtn" type="button" class="secondary">清除套用</button>
+      <button id="applyBtn" type="button" class="secondary">套用</button>
+    </div>
+  </div>
+
+  <script src="js/CSInterface.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

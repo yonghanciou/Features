@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ExtensionBundleId="com.yonghanciou.gridguidespanel" ExtensionBundleName="Zurich Seq" ExtensionBundleVersion="1.0.0" Version="6.0">
+  <Author>
+    <![CDATA[yonghanciou]]>
+  </Author>
+  <ExtensionList>
+    <Extension Id="com.yonghanciou.gridguidespanel.panel" Version="1.0.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="ILST" Version="[17.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="11.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.yonghanciou.gridguidespanel.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/hostscript.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Zurich Seq</Menu>
+          <Geometry>
+            <Size>
+              <Height>720</Height>
+              <Width>340</Width>
+            </Size>
+            <MinSize>
+              <Height>420</Height>
+              <Width>300</Width>
+            </MinSize>
+            <MaxSize>
+              <Height>2000</Height>
+              <Width>600</Width>
+            </MaxSize>
+          </Geometry>
+          <Icons/>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>

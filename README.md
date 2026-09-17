@@ -13,6 +13,7 @@
 | 外掛 | 簡述 |
 |---|---|
 | [smoothie](illustrator/smoothie/) | 帶有曲率邏輯的圓角特效外掛|
+| [Zurich Seq](illustrator/zurich-seq/) | Swiss / 等分網格輔助線產生器,常用設定可存成預設 |
 
 ### Glyphs
 
