@@ -4,7 +4,6 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 
 [![下載 Smoothie.aip](https://img.shields.io/badge/下載-Smoothie.aip-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/latest)
 
-> **⬆️ 這裡不是原始碼倉庫的用法——一般使用者請直接點上面的按鈕到 [Releases](https://github.com/yonghanciou/Features/releases/latest) 下載編譯好的 `.aip`,不用管下面的 `src/` 資料夾。** 步驟見下方「安裝方式」。
 
 ![Smoothie 對話框截圖](assets/dialog.png)
 
