@@ -2,7 +2,7 @@
 
 Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「圓角」效果更細膩、可調範圍更大的轉角平滑。
 
-[![下載 Smoothie.aip](https://img.shields.io/badge/下載-Smoothie.aip-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/latest)
+[![下載 Smoothie.aip](https://img.shields.io/badge/下載-Smoothie.aip-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/tag/v1.0.0-smoothie)
 
 
 ![Smoothie 對話框截圖](assets/dialog.png)

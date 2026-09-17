@@ -2,6 +2,8 @@
 
 Illustrator 的網格/輔助線產生器 CEP 面板,支援 Swiss 風格網格與等分網格兩種類型,常用設定可以存成預設隨時套用。
 
+[![下載 Zurich Seq](https://img.shields.io/badge/下載-Zurich%20Seq-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/tag/v1.0.0-zurich-seq)
+
 ![面板全貌](assets/panel.png)
 
 ## 支援版本
@@ -13,7 +15,7 @@ Illustrator 的網格/輔助線產生器 CEP 面板,支援 Swiss 風格網格與
 
 這是一個 Adobe CEP 擴充功能(不是 `.aip` 外掛),目前未經 Adobe 簽章,需要先開啟 Illustrator 的「擴充功能除錯模式」才能載入。
 
-1. 把這個資料夾裡的 `src/` 整包複製到:
+1. 到 [Releases](https://github.com/yonghanciou/Features/releases/tag/v1.0.0-zurich-seq) 下載 `ZurichSeq-v1.0.0-macOS.zip` 並解壓縮(或直接用這個資料夾裡的 `src/`),把整包複製到:
    ```
    ~/Library/Application Support/Adobe/CEP/extensions/
    ```
