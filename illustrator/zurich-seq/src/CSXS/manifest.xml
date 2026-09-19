@@ -47,7 +47,13 @@
               <Width>600</Width>
             </MaxSize>
           </Geometry>
-          <Icons/>
+          <Icons>
+            <Icon Type="Normal">./icons/icon.png</Icon>
+            <Icon Type="RollOver">./icons/icon_rollover.png</Icon>
+            <Icon Type="Disabled">./icons/icon_disabled.png</Icon>
+            <Icon Type="DarkNormal">./icons/icon_dark.png</Icon>
+            <Icon Type="DarkRollOver">./icons/icon_dark_rollover.png</Icon>
+          </Icons>
         </UI>
       </DispatchInfo>
     </Extension>
