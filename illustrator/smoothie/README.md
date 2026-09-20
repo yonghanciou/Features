@@ -4,8 +4,7 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 
 [![下載 Smoothie.aip](https://img.shields.io/badge/下載-Smoothie.aip-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/tag/v1.0.0-smoothie)
 
-
-![Smoothie 對話框截圖](assets/dialog.png)
+![Smoothie-cover](assets/smoothie-v1.0.png)
 
 ## 支援版本
 
@@ -17,6 +16,8 @@ Illustrator 的圓角特效外掛,用比例式的曲率邏輯做出比內建「�
 半徑決定圓角多大,曲率(0–100%,預設 65%)決定圓角多「飽滿」:曲率愈低愈接近直線斜切,愈高圓角愈往轉角頂點延伸,不是 Illustrator 內建「圓角」效果那種固定的圓弧。
 
 ## 安裝方式
+
+![Smoothie](assets/dialog.png)
 
 **不想自己編譯的話**,到 [Releases](https://github.com/yonghanciou/Features/releases/v1.0.0-smoothie) 下載編譯好的 `Smoothie-vX.X.X-macOS.zip`:
 
