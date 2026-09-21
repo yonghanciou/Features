@@ -14,6 +14,7 @@
 |---|---|
 | [smoothie](illustrator/smoothie/) | 帶有曲率邏輯的圓角特效外掛|
 | [Zurich Seq](illustrator/zurich-seq/) | Swiss / 等分網格輔助線產生器,常用設定可存成預設 |
+| [kaku](illustrator/kaku/) | 把路徑量化成方塊像素網格的外掛,可整格填色或只吸附邊緣 |
 
 ### Glyphs
 
