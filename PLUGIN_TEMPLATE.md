@@ -2,6 +2,10 @@
 
 一句話說明這個外掛能做什麼。
 
+[![下載 外掛名稱](https://img.shields.io/badge/下載-外掛名稱-1473E6?style=for-the-badge)](https://github.com/yonghanciou/Features/releases/tag/vX.X.X-外掛名稱)
+
+![封面圖](assets/cover.png)
+
 ## 支援版本
 
 - 作業系統:macOS(核心開發平台,未測試 Windows)
@@ -10,8 +14,9 @@
 
 ## 安裝方式
 
-1. 下載這個資料夾(或 release 附的 .zip)
-2. 說明要放到哪個資料夾 / 如何載入
+到 [Releases](https://github.com/yonghanciou/Features/releases/tag/vX.X.X-外掛名稱) 下載編譯好的版本,說明怎麼安裝(放到哪個資料夾 / 如何載入,ad-hoc 簽章要怎麼解除 macOS 封鎖等)。
+
+**自己編譯**:這個資料夾放的是外掛原始碼(`src/`),需要搭配對應 SDK 自行編譯。
 
 ## 使用方法
 
