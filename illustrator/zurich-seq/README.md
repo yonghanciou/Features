@@ -42,7 +42,7 @@ Illustrator 的網格/輔助線產生器,支援 Swiss 風格網格與等分網�
 
 輸入框都支援滑鼠滾輪或右側小箭頭直接調整數值。
 
-![預設功能示範](assets/preset-demo.png)
+![預設功能示範](assets/preset-demo.gif)
 
 ## 已知問題
 
