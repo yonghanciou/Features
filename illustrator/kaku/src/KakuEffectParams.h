@@ -31,8 +31,13 @@ namespace kaku {
 // shipped, same reasoning as Smoothie's ParamKeys.
 namespace ParamKeys {
     constexpr const char* kDensity = "kaku.density";     // real, 1..20
-    constexpr const char* kMode = "kaku.mode";           // int: 0 = block (完全像素化), 1 = outline (格點吸附)
+    constexpr const char* kMode = "kaku.mode";           // int: 0 = block (像素化), 2 = polygon (多邊形).
+                                                          // 1 (邊緣吸附/kOutline) was removed and is intentionally
+                                                          // left unassigned rather than reused, in case an old
+                                                          // saved document still has mode=1 in its Live Effect
+                                                          // params -- DecodeMode below falls back to kBlock for it.
     constexpr const char* kCellRatio = "kaku.cellRatio"; // real, 1..200
+    constexpr const char* kFacets = "kaku.facets";       // int, 1..6 -- polygon mode only
 }
 
 inline GridParams DefaultParams() {
@@ -40,10 +45,24 @@ inline GridParams DefaultParams() {
     p.density = 3.0;
     p.mode = PixelateMode::kBlock;
     p.cellRatio = 8.0;
+    p.facets = 2;
     return p;
 }
 
 #if KAKU_HAVE_AI_SDK
+
+namespace detail {
+inline ai::int32 EncodeMode(PixelateMode m) {
+    switch (m) {
+        case PixelateMode::kPolygon: return 2;
+        case PixelateMode::kBlock: default: return 0;
+    }
+}
+inline PixelateMode DecodeMode(ai::int32 v) {
+    if (v == 2) return PixelateMode::kPolygon;
+    return PixelateMode::kBlock; // also the fallback for the old, removed mode=1 (邊緣吸附)
+}
+} // namespace detail
 
 inline GridParams ReadParams(AILiveEffectParameters dict) {
     GridParams p = DefaultParams();
@@ -54,21 +73,29 @@ inline GridParams ReadParams(AILiveEffectParameters dict) {
 
     key = sAIDictionary->Key(ParamKeys::kMode);
     if (sAIDictionary->IsKnown(dict, key)) {
-        ai::int32 v = (p.mode == PixelateMode::kOutline) ? 1 : 0;
+        ai::int32 v = detail::EncodeMode(p.mode);
         sAIDictionary->GetIntegerEntry(dict, key, &v);
-        p.mode = (v == 1) ? PixelateMode::kOutline : PixelateMode::kBlock;
+        p.mode = detail::DecodeMode(v);
     }
 
     key = sAIDictionary->Key(ParamKeys::kCellRatio);
     if (sAIDictionary->IsKnown(dict, key)) sAIDictionary->GetRealEntry(dict, key, &p.cellRatio);
+
+    key = sAIDictionary->Key(ParamKeys::kFacets);
+    if (sAIDictionary->IsKnown(dict, key)) {
+        ai::int32 v = p.facets;
+        sAIDictionary->GetIntegerEntry(dict, key, &v);
+        p.facets = (int)v;
+    }
 
     return p;
 }
 
 inline void WriteParams(AILiveEffectParameters dict, const GridParams& p) {
     sAIDictionary->SetRealEntry(dict, sAIDictionary->Key(ParamKeys::kDensity), (AIReal)p.density);
-    sAIDictionary->SetIntegerEntry(dict, sAIDictionary->Key(ParamKeys::kMode), (p.mode == PixelateMode::kOutline) ? 1 : 0);
+    sAIDictionary->SetIntegerEntry(dict, sAIDictionary->Key(ParamKeys::kMode), detail::EncodeMode(p.mode));
     sAIDictionary->SetRealEntry(dict, sAIDictionary->Key(ParamKeys::kCellRatio), (AIReal)p.cellRatio);
+    sAIDictionary->SetIntegerEntry(dict, sAIDictionary->Key(ParamKeys::kFacets), (ai::int32)p.facets);
 }
 
 #endif // KAKU_HAVE_AI_SDK

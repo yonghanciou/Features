@@ -13,77 +13,9 @@ using namespace kaku;
 
 static int g_failures = 0;
 
-// Mirrors the jsx's "閉合路徑：頭尾若吸到同一格，去掉尾巴" step from
-// processPathOutline -- belongs in the plugin's per-path caller, not in
-// KakuMath itself; duplicated here just so this test exercises the
-// same pipeline shape the real plugin will.
-static bool closed_dedup_applies(const std::vector<Vec2>& pts) {
-    return pts.size() > 1 && pts.front().x == pts.back().x && pts.front().y == pts.back().y;
-}
-
 static void Check(bool cond, const char* what) {
     if (!cond) { std::printf("FAIL: %s\n", what); ++g_failures; }
     else std::printf("ok:   %s\n", what);
-}
-
-// A closed square (0,0)-(100,0)-(100,100)-(0,100), as 4 straight-line
-// "Bezier" segments (handles collapsed onto the anchors, same as how a
-// corner-only Illustrator path represents a straight edge).
-static std::vector<BezierSeg> SquareSegs() {
-    Vec2 a{0, 0}, b{100, 0}, c{100, 100}, d{0, 100};
-    return {
-        {a, a, b, b},
-        {b, b, c, c},
-        {c, c, d, d},
-        {d, d, a, a},
-    };
-}
-
-static void TestSquareOutline() {
-    auto segs = SquareSegs();
-    bool cap = false;
-    auto raw = ResamplePath(segs, /*closed=*/true, /*spacing=*/10.0, 15000, &cap);
-    Check(!cap, "square resample: no cap hit at spacing=10 on a 400pt perimeter");
-    Check(raw.size() >= 36 && raw.size() <= 44, "square resample: ~40 points at spacing 10 over 400pt perimeter");
-
-    auto snapped = SnapToGrid(raw, /*cell=*/25.0, 0, 0);
-    // every corner of the square already sits exactly on a 25pt grid, and
-    // every edge is axis-aligned, so after snapping the whole thing should
-    // collapse to just the 4 original corners (before simplify, snapping
-    // to a grid that lines up with the edges already dedups mid-edge runs
-    // via SnapToGrid's own consecutive-duplicate check only where sample
-    // points land on the SAME grid corner, which for spacing=10 on a
-    // 25pt grid won't be every point -- so just check corners are present
-    // and nothing lies off-grid).
-    for (const auto& p : snapped) {
-        Check(std::fmod(p.x, 25.0) == 0.0 && std::fmod(p.y, 25.0) == 0.0, "square snap: point lies exactly on 25pt grid");
-    }
-
-    // Closed-path head/tail dedup: the caller (KakuPlugin.cpp's
-    // per-path processing, mirroring the jsx's processPathOutline) must do
-    // this before simplifying -- SnapToGrid only dedups *consecutive*
-    // samples, and for a closed loop the very last raw sample (just before
-    // wrapping back to the start) can independently snap to the same grid
-    // corner as the very first sample without ever being adjacent in the
-    // array, leaving a spurious duplicate endpoint that corrupts
-    // SimplifyCollinear's neighbor math. Replicated here so this test
-    // actually exercises what the real caller will do.
-    if (closed_dedup_applies(snapped)) {
-        snapped.pop_back();
-    }
-
-    auto simplified = SimplifyCollinear(snapped, /*closed=*/true);
-    Check(simplified.size() == 4, "square simplify: collapses to exactly 4 corners");
-    if (simplified.size() == 4) {
-        bool sawAll4 = true;
-        double want[4][2] = {{0,0},{100,0},{100,100},{0,100}};
-        for (auto& w : want) {
-            bool found = false;
-            for (auto& p : simplified) if (p.x == w[0] && p.y == w[1]) found = true;
-            sawAll4 = sawAll4 && found;
-        }
-        Check(sawAll4, "square simplify: the 4 corners are exactly (0,0) (100,0) (100,100) (0,100)");
-    }
 }
 
 // An open L-shaped polyline (not closed) to check the open-path endpoint
@@ -123,15 +55,6 @@ static void TestCircleResampleArea() {
     double area = std::fabs(area2) / 2.0;
     double expected = M_PI * r * r;
     Check(std::fabs(area - expected) / expected < 0.01, "circle resample: polygon area within 1% of pi*r^2");
-}
-
-static void TestSnapDedup() {
-    // Many points crammed into the same cell should collapse to one run
-    // (SnapToGrid only dedups *consecutive* duplicates, matching the jsx).
-    std::vector<Vec2> pts;
-    for (int i = 0; i < 5; ++i) pts.push_back({1.0 + i * 0.1, 1.0 + i * 0.1});
-    auto snapped = SnapToGrid(pts, 10.0, 0, 0);
-    Check(snapped.size() == 1, "snap dedup: 5 nearby points in the same cell collapse to 1");
 }
 
 // ===========================================================================
@@ -389,11 +312,100 @@ static void TestBoundaryEpsilonAbsorbsFloatingPointJitter() {
     }
 }
 
+// ===========================================================================
+// 多邊形 (PolygonizeSegments): port of Polygonize.jsx's polygonize(). Not
+// grid-based -- verifies straight segments are left untouched (no spurious
+// subdivision) while curved segments get exactly facets-1 extra points, and
+// that closed/open segment-count handling matches ResamplePath's convention
+// (both rely on the same "segs.size() already accounts for closed/open"
+// contract from ReadPathAsBeziers).
+// ===========================================================================
+
+// A closed square as 4 perfectly straight segments (handles collapsed onto
+// their anchors, same as how a corner-only Illustrator path represents a
+// straight edge).
+static std::vector<BezierSeg> SquareSegsClosed() {
+    Vec2 a{0, 0}, b{100, 0}, c{100, 100}, d{0, 100};
+    return {
+        {a, a, b, b},
+        {b, b, c, c},
+        {c, c, d, d},
+        {d, d, a, a},
+    };
+}
+
+static void TestPolygonizeLeavesStraightSegmentsAlone() {
+    auto segs = SquareSegsClosed();
+    auto out = PolygonizeSegments(segs, true, 6); // facets=6 -- would matter a lot if segments were (wrongly) treated as curved
+    Check(out.size() == 4, "polygonize straight: 4 perfectly straight segments stay exactly 4 points regardless of facets");
+    if (out.size() == 4) {
+        Check(out[0].x == 0 && out[0].y == 0 && out[1].x == 100 && out[1].y == 0 &&
+              out[2].x == 100 && out[2].y == 100 && out[3].x == 0 && out[3].y == 100,
+              "polygonize straight: corners are exactly the original 4 anchors, unmoved");
+    }
+}
+
+// A single circular quadrant (genuinely curved, kappa-constant handles) --
+// checks the point count matches Polygonize.jsx's exact formula (anchor +
+// facets-1 interior points per curved segment) and that the interior points
+// actually lie on the curve (not on the straight chord), i.e. subdivision
+// really happened.
+static void TestPolygonizeSubdividesCurvedSegments() {
+    const double r = 50.0, kappa = 0.5522847498;
+    Vec2 p0{r, 0}, p1{r, r * kappa}, p2{r * kappa, r}, p3{0, r};
+    std::vector<BezierSeg> segs = { {p0, p1, p2, p3} }; // one curved segment, open path
+
+    for (int facets = 1; facets <= 6; ++facets) {
+        auto out = PolygonizeSegments(segs, /*closed=*/false, facets);
+        // open path: 1 segment contributes [p0, facets-1 interior points], then the
+        // final anchor p3 is appended once at the end (mirrors ResamplePath's
+        // open-path tail-append) -> total = 1 + (facets-1) + 1 = facets + 1.
+        size_t expected = (size_t)facets + 1;
+        char label[128];
+        std::snprintf(label, sizeof(label), "polygonize curved: facets=%d produces exactly %zu points", facets, expected);
+        Check(out.size() == expected, label);
+    }
+
+    auto out3 = PolygonizeSegments(segs, false, 4);
+    if (out3.size() == 5) {
+        // Middle interior point (f=2/4=0.5) should sit ON the bezier curve,
+        // not on the straight p0-p3 chord -- confirms real subdivision, not
+        // just linear interpolation between anchors.
+        Vec2 onCurve = BezierAt(segs[0], 0.5);
+        Vec2 onChord = { (p0.x + p3.x) / 2.0, (p0.y + p3.y) / 2.0 };
+        double distToCurve = std::fabs(out3[2].x - onCurve.x) + std::fabs(out3[2].y - onCurve.y);
+        double distToChord = std::fabs(out3[2].x - onChord.x) + std::fabs(out3[2].y - onChord.y);
+        Check(distToCurve < 1e-9 && distToChord > 1.0,
+              "polygonize curved: interior sample lies on the actual curve, not the straight chord");
+    }
+}
+
+// A closed shape mixing one straight edge with one curved edge -- checks
+// the two segment types are handled independently within the same path
+// (the straight edge contributing no extra points, the curved edge
+// contributing facets-1).
+static void TestPolygonizeMixedStraightAndCurved() {
+    const double r = 50.0, kappa = 0.5522847498;
+    Vec2 a{0, 0}, b{100, 0};                                  // straight edge a->b
+    Vec2 c1{100 + r * kappa, 0}, c2{100 + r, r * kappa}, c{100 + r, r}; // curved edge b->c (quarter arc)
+    Vec2 d{0, r};                                             // straight edges c->d and d->a
+    std::vector<BezierSeg> segs = {
+        {a, a, b, b},           // straight
+        {b, c1, c2, c},         // curved
+        {c, c, d, d},           // straight
+        {d, d, a, a},           // straight
+    };
+    int facets = 5;
+    auto out = PolygonizeSegments(segs, true, facets);
+    // 3 straight segments contribute 1 point each (their start anchor);
+    // 1 curved segment contributes 1 + (facets-1) = facets points.
+    size_t expected = 3 + (size_t)facets;
+    Check(out.size() == expected, "polygonize mixed: straight edges contribute 1 point each, the curved edge contributes facets points");
+}
+
 int main() {
-    TestSquareOutline();
     TestOpenPolyline();
     TestCircleResampleArea();
-    TestSnapDedup();
     TestRasterizeCircle();
     TestRasterizeDumbbellSplits();
     TestRasterizeThinStrokeNoLongerVanishes();
@@ -402,6 +414,9 @@ int main() {
     TestCompoundHoleSurvivesPixelation();
     TestDiagonalTouchDoesNotCorruptBoundary();
     TestBoundaryEpsilonAbsorbsFloatingPointJitter();
+    TestPolygonizeLeavesStraightSegmentsAlone();
+    TestPolygonizeSubdividesCurvedSegments();
+    TestPolygonizeMixedStraightAndCurved();
     std::printf("\n%s\n", g_failures == 0 ? "ALL PASS" : "SOME FAILED");
     return g_failures == 0 ? 0 : 1;
 }

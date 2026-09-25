@@ -2,15 +2,14 @@
 //
 // Kaku -- an Illustrator Live Effect ("Effect > SFF Features >
 // Kaku..." in the Appearance panel), built the same way as this
-// developer's existing Smoothie plugin (samplecode/Smoothie), and a direct
-// port of the "格點吸附" (corner-snap) mode from the ExtendScript prototype
-// grid-quantize.jsx: resample every path segment into a fine polyline,
-// snap each sample to the nearest grid corner, then drop runs of
-// collinear points.
-//
-// Phase 2 adds the jsx's "完全像素化" block/rasterize mode and ratio-based
-// cell sizing on top of phase 1's outline/corner-snap mode (both verified
-// working end to end in real Illustrator).
+// developer's existing Smoothie plugin (samplecode/Smoothie). Two modes:
+// 像素化 (rasterize a path to a grid, KakuMath.h's RasterizeToContours) and
+// 多邊形 (replace each curved segment with straight chords,
+// PolygonizeSegments). A third mode, 邊緣吸附 (corner-snap to grid,
+// preserving original angles -- the original port of grid-quantize.jsx's
+// processPathOutline), existed earlier and was removed entirely at the
+// user's request; ProcessOnePathOutline and SnapToGrid, which existed only
+// to support it, were deleted alongside it.
 //
 // Architecture verified against, and copied from, Smoothie's
 // SmoothiePlugin.cpp (itself verified against the SDK's own TwirlFilter
@@ -111,62 +110,7 @@ static ASErr ReadPathAsBeziers(AIArtHandle path, bool closed, std::vector<Bezier
 }
 
 // ---------------------------------------------------------------------
-// Mode 1: 格點吸附 (outline / corner-snap) -- mutates `path` in place,
-// never changes its identity. Always simplifies collinear runs (no longer
-// a user-facing toggle).
-// ---------------------------------------------------------------------
-static ASErr ProcessOnePathOutline(AIArtHandle path, const GridParams& params, double cell, double gx, double gy) {
-    AIBoolean closed = false;
-    ASErr error = sAIPath->GetPathClosed(path, &closed);
-    if (error) return error;
-
-    std::vector<BezierSeg> beziers;
-    error = ReadPathAsBeziers(path, closed, &beziers);
-    if (error) return error;
-    if (beziers.empty()) return kNoErr; // nothing to quantize
-
-    double spacing = cell / (params.density > 0 ? params.density : 1.0);
-    if (spacing < 0.2) spacing = 0.2; // matches the jsx's Math.max(0.2, cell/density)
-
-    bool hitCap = false; // reserved for future stats reporting, not surfaced yet
-    (void)hitCap;
-    auto raw = ResamplePath(beziers, closed, spacing, 15000, &hitCap);
-    if (raw.size() < 2) return kNoErr;
-
-    auto pts = SnapToGrid(raw, cell, gx, gy);
-
-    // Closed path: if the head and tail sampled into the same grid cell,
-    // drop the tail -- same as the jsx's processPathOutline.
-    if (closed && pts.size() > 1 && pts.front().x == pts.back().x && pts.front().y == pts.back().y) {
-        pts.pop_back();
-    }
-
-    pts = SimplifyCollinear(pts, closed);
-
-    size_t minLen = closed ? 3 : 2;
-    if (pts.size() < minLen) {
-        // Grid too coarse relative to this path: collapse to a single
-        // grid-aligned block covering its bounding box rather than giving
-        // up (this is "push the cell size to the extreme", not a bug --
-        // see grid-quantize.jsx's boundingBoxCells for the original report).
-        if (!closed) return kNoErr; // open paths: no sensible "one block" fallback
-        auto rectPts = BoundingBoxCells(raw, cell, gx, gy);
-        if (rectPts.size() < 4) return kNoErr;
-        pts = std::move(rectPts);
-    }
-
-    std::vector<AIPathSegment> newSegs;
-    PointsToSegments(pts, &newSegs);
-
-    error = sAIPath->SetPathSegmentCount(path, (ai::int16)newSegs.size());
-    if (error) return error;
-    error = sAIPath->SetPathSegments(path, 0, (ai::int16)newSegs.size(), newSegs.data());
-    if (error) return error;
-    return sAIPath->SetPathClosed(path, closed);
-}
-
-// ---------------------------------------------------------------------
-// Mode 2: 完全像素化 (block / rasterize). Only supports closed paths
+// Mode: 像素化 (block / rasterize). Only supports closed paths
 // (matches the jsx). Single-contour results mutate `path` in place;
 // multi-contour results (the shape split into islands, or gained a hole)
 // build a brand-new compound path as `path`'s sibling and hand it back via
@@ -200,7 +144,10 @@ static ASErr ProcessOnePathBlock(AIArtHandle path, const GridParams& params, dou
 
     std::vector<std::vector<Vec2>> kept = std::move(rasterized.contours);
     if (kept.empty()) {
-        // Degenerate: same "collapse to one block" fallback as outline mode.
+        // Degenerate: collapse to a single grid-aligned block covering the
+        // shape's bounding box rather than giving up (this is "push the
+        // cell size to the extreme", not a bug -- see grid-quantize.jsx's
+        // boundingBoxCells for the original report).
         auto rectPts = BoundingBoxCells(raw, cell, gx, gy);
         if (rectPts.size() < 4) return kNoErr;
         kept.push_back(std::move(rectPts));
@@ -337,14 +284,42 @@ static ASErr ProcessOneCompoundPathBlock(AIArtHandle compoundPath, const GridPar
     return kNoErr;
 }
 
+// ---------------------------------------------------------------------
+// Mode: 多邊形 (polygonize). Not grid-based at all -- mutates `path` in
+// place, never changes its identity. `cell`/`gx`/`gy` are irrelevant here
+// (no grid), so this only needs `params` for `facets`.
+// ---------------------------------------------------------------------
+static ASErr ProcessOnePathPolygon(AIArtHandle path, const GridParams& params) {
+    AIBoolean closed = false;
+    ASErr error = sAIPath->GetPathClosed(path, &closed);
+    if (error) return error;
+
+    std::vector<BezierSeg> beziers;
+    error = ReadPathAsBeziers(path, closed, &beziers);
+    if (error) return error;
+    if (beziers.empty()) return kNoErr;
+
+    auto pts = PolygonizeSegments(beziers, closed, params.facets);
+    size_t minLen = closed ? 3 : 2;
+    if (pts.size() < minLen) return kNoErr;
+
+    std::vector<AIPathSegment> newSegs;
+    PointsToSegments(pts, &newSegs);
+    error = sAIPath->SetPathSegmentCount(path, (ai::int16)newSegs.size());
+    if (error) return error;
+    error = sAIPath->SetPathSegments(path, 0, (ai::int16)newSegs.size(), newSegs.data());
+    if (error) return error;
+    return sAIPath->SetPathClosed(path, closed);
+}
+
 // Dispatches to the mode `params.mode` selects. `outReplacement` is set
 // (non-null) only when block mode replaced `path` with a new compound
-// path; outline mode never changes identity.
+// path; polygon mode never changes identity.
 static ASErr ProcessOnePath(AIArtHandle path, const GridParams& params, double cell, double gx, double gy,
                              AIArtHandle* outReplacement) {
     *outReplacement = nullptr;
-    if (params.mode == PixelateMode::kBlock) return ProcessOnePathBlock(path, params, cell, gx, gy, outReplacement);
-    return ProcessOnePathOutline(path, params, cell, gx, gy);
+    if (params.mode == PixelateMode::kPolygon) return ProcessOnePathPolygon(path, params);
+    return ProcessOnePathBlock(path, params, cell, gx, gy, outReplacement);
 }
 
 static ASErr GoLiveEffectRecursive(AIArtHandle art, const GridParams& params, double cell, double gx, double gy);
@@ -370,11 +345,11 @@ static ASErr ProcessArtNode(AIArtHandle art, const GridParams& params, double ce
         return ProcessOneCompoundPathBlock(art, params, cell, gx, gy);
     }
     if (artType == kGroupArt || artType == kCompoundPathArt) {
-        // Either a plain group, or a compound path in outline mode --
-        // outline mode never rebuilds topology (it only snaps existing
-        // points in place, preserving each sub-path's original winding),
-        // so per-child processing is safe there; only block mode needs the
-        // combined nonzero-winding treatment above.
+        // Either a plain group, or a compound path in polygon mode --
+        // polygon mode never rebuilds topology (it only replaces each
+        // sub-path's own segments in place, preserving that sub-path's
+        // original winding), so per-child processing is safe there; only
+        // block mode needs the combined nonzero-winding treatment above.
         return GoLiveEffectRecursive(art, params, cell, gx, gy);
     }
     return kNoErr;
@@ -487,7 +462,7 @@ ASErr KakuPlugin::GoLiveEffect(AILiveEffectGoMessage* message) {
     // may need outright *replacement* -- block mode's multi-contour case,
     // the only situation that needs message->art's own [in, out] handle
     // reassigned), a compound path (rasterized as one unit in block mode so
-    // holes survive, or recursed into per sub-path in outline mode), or a
+    // holes survive, or recursed into per sub-path in polygon mode), or a
     // group (recursed into).
     AIArtHandle replacement = nullptr;
     ASErr error = ProcessArtNode(message->art, params, cell, gx, gy, &replacement);

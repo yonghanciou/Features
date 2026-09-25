@@ -6,11 +6,14 @@
 // remove NSWindowStyleMaskClosable to hide the traffic lights -- both
 // avoided here too since this dialog uses the exact same NSStackView shape).
 //
-// Deliberately small: fixed-pt cell sizing, the document-origin choice, and
-// the simplify-collinear toggle were all removed at the user's request.
-// Grid sizing is ratio-only now (跨向格數), origin is always the selection's
-// own top-left, and every path always simplifies collinear runs. 完全像素化
-// is listed first and is the default mode, not 格點吸附.
+// Deliberately small: fixed-pt cell sizing, the document-origin choice, the
+// simplify-collinear toggle, and (later) the entire 邊緣吸附 mode were all
+// removed at the user's request. Grid sizing is ratio-only now (格數),
+// origin is always the selection's own top-left, and every path always
+// simplifies collinear runs. 像素化 is listed first and is the default
+// mode. 多邊形 is a second mode (not grid-based -- see KakuMath.h's
+// PolygonizeSegments): it uses 面數 instead of 格數/取樣密度, so those rows
+// get disabled rather than hidden while it's selected (updateModeEnabled).
 //
 // Window content height is computed from the stack view's own `fittingSize`
 // after it's built (see the earlier phase-2 revision of this file for why:
@@ -31,6 +34,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <algorithm>
+#include <cmath>
 
 using namespace kaku;
 
@@ -53,11 +57,13 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
 
 @property (nonatomic, strong) NSWindow* window;
 @property (nonatomic, strong) NSButton* modeBlockRadio;
-@property (nonatomic, strong) NSButton* modeOutlineRadio;
+@property (nonatomic, strong) NSButton* modePolygonRadio;
 @property (nonatomic, strong) NSSlider* ratioSlider;
 @property (nonatomic, strong) NSTextField* ratioField;
 @property (nonatomic, strong) NSSlider* densitySlider;
 @property (nonatomic, strong) NSTextField* densityField;
+@property (nonatomic, strong) NSSlider* facetsSlider;
+@property (nonatomic, strong) NSTextField* facetsField;
 @property (nonatomic, strong) NSButton* previewCheckbox;
 
 @property (nonatomic, assign) AILiveEffectParameters aiParameters;
@@ -87,19 +93,25 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
     BOOL dark = sAIUITheme->IsUIThemeDark();
     NSColor* textColor = ThemeColor(kAIUIComponentColorText, [NSColor labelColor]);
 
-    // --- 像素化模式 radios -- own container: AppKit's NSButtonTypeRadio
+    // --- 模式 radios -- own container: AppKit's NSButtonTypeRadio
     // auto-exclusivity groups by "same superview", so this pair needs its
     // own stack rather than sharing one with any other radio group.
-    // 完全像素化 listed (and defaulted to) first, per the user's choice.
+    // 像素化 listed (and defaulted to) first, per the user's choice. 多邊形
+    // is a second, unrelated algorithm (not grid-based -- see
+    // PolygonizeSegments in KakuMath.h): it uses `facets` instead of
+    // `格數`/`取樣密度`, so those two rows get disabled while it's selected
+    // (updateModeEnabled below) rather than removed, to avoid re-measuring
+    // and resizing the window on every mode switch. (A third mode, 邊緣吸附,
+    // existed earlier and was removed entirely at the user's request.)
     NSTextField* modeLabel = [NSTextField labelWithString:@"模式:"];
     modeLabel.textColor = textColor;
 
     self.modeBlockRadio = [NSButton radioButtonWithTitle:@"像素化" target:self action:@selector(controlChanged:)];
-    self.modeOutlineRadio = [NSButton radioButtonWithTitle:@"邊緣吸附" target:self action:@selector(controlChanged:)];
+    self.modePolygonRadio = [NSButton radioButtonWithTitle:@"多邊形" target:self action:@selector(controlChanged:)];
     self.modeBlockRadio.state = (initial.mode == PixelateMode::kBlock) ? NSControlStateValueOn : NSControlStateValueOff;
-    self.modeOutlineRadio.state = (initial.mode == PixelateMode::kOutline) ? NSControlStateValueOn : NSControlStateValueOff;
+    self.modePolygonRadio.state = (initial.mode == PixelateMode::kPolygon) ? NSControlStateValueOn : NSControlStateValueOff;
 
-    NSStackView* modeStack = [NSStackView stackViewWithViews:@[self.modeBlockRadio, self.modeOutlineRadio]];
+    NSStackView* modeStack = [NSStackView stackViewWithViews:@[self.modeBlockRadio, self.modePolygonRadio]];
     modeStack.orientation = NSUserInterfaceLayoutOrientationVertical;
     modeStack.alignment = NSLayoutAttributeLeading;
     modeStack.spacing = 4;
@@ -148,6 +160,28 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
     densityRow.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     densityRow.distribution = NSStackViewDistributionFill;
 
+    // --- 面數 row (多邊形 only) ---
+    NSTextField* facetsLabel = [NSTextField labelWithString:@"面數:"];
+    facetsLabel.textColor = textColor;
+
+    self.facetsSlider = [NSSlider sliderWithValue:initial.facets
+                                          minValue:1.0
+                                          maxValue:6.0
+                                            target:self
+                                            action:@selector(controlChanged:)];
+    [self.facetsSlider setContentHuggingPriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
+
+    self.facetsField = [NSTextField textFieldWithString:[NSString stringWithFormat:@"%d", initial.facets]];
+    self.facetsField.delegate = self;
+    self.facetsField.target = self;
+    self.facetsField.action = @selector(controlChanged:);
+    self.facetsField.alignment = NSTextAlignmentRight;
+    [self.facetsField.widthAnchor constraintEqualToConstant:36].active = YES;
+
+    NSStackView* facetsRow = [NSStackView stackViewWithViews:@[facetsLabel, self.facetsSlider, self.facetsField]];
+    facetsRow.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    facetsRow.distribution = NSStackViewDistributionFill;
+
     // --- Preview checkbox ---
     self.previewCheckbox = [NSButton checkboxWithTitle:@"預覽" target:self action:@selector(controlChanged:)];
     self.previewCheckbox.state = allowPreview ? NSControlStateValueOn : NSControlStateValueOff;
@@ -171,6 +205,7 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
         modeLabel, modeStack,
         ratioRow,
         densityLabel, densityRow,
+        facetsRow,
         self.previewCheckbox, buttonRow
     ]];
     rootStack.orientation = NSUserInterfaceLayoutOrientationVertical;
@@ -213,14 +248,29 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
         [buttonRow.widthAnchor constraintEqualToAnchor:rootStack.widthAnchor],
     ]];
 
+    [self updateModeEnabled];
+
     return self;
+}
+
+// 多邊形模式下格數/取樣密度用不到(不是網格演算法),面數只有多邊形用得到 --
+// 灰掉不相關的欄位,而不是整排藏起來,避免每次切模式都要重新量視窗高度。
+- (void)updateModeEnabled {
+    BOOL polygon = (self.modePolygonRadio.state == NSControlStateValueOn);
+    self.ratioSlider.enabled = !polygon;
+    self.ratioField.enabled = !polygon;
+    self.densitySlider.enabled = !polygon;
+    self.densityField.enabled = !polygon;
+    self.facetsSlider.enabled = polygon;
+    self.facetsField.enabled = polygon;
 }
 
 - (GridParams)currentParams {
     GridParams p;
-    p.mode = (self.modeOutlineRadio.state == NSControlStateValueOn) ? PixelateMode::kOutline : PixelateMode::kBlock;
+    p.mode = (self.modePolygonRadio.state == NSControlStateValueOn) ? PixelateMode::kPolygon : PixelateMode::kBlock;
     p.cellRatio = self.ratioSlider.doubleValue;
     p.density = self.densitySlider.doubleValue;
+    p.facets = (int)std::round(self.facetsSlider.doubleValue);
     return p;
 }
 
@@ -246,6 +296,17 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
     self.densitySlider.doubleValue = v;
 }
 
+- (void)syncFacetsFieldFromSlider {
+    self.facetsField.stringValue = [NSString stringWithFormat:@"%.0f", self.facetsSlider.doubleValue];
+}
+
+- (void)syncSliderFromFacetsField {
+    double v = self.facetsField.doubleValue;
+    if (v < 1) v = 1;
+    if (v > 6) v = 6;
+    self.facetsSlider.doubleValue = v;
+}
+
 - (void)controlChanged:(id)sender {
     if (sender == self.ratioSlider) {
         [self syncRatioFieldFromSlider];
@@ -255,6 +316,12 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
         [self syncDensityFieldFromSlider];
     } else if (sender == self.densityField) {
         [self syncSliderFromDensityField];
+    } else if (sender == self.facetsSlider) {
+        [self syncFacetsFieldFromSlider];
+    } else if (sender == self.facetsField) {
+        [self syncSliderFromFacetsField];
+    } else if (sender == self.modeBlockRadio || sender == self.modePolygonRadio) {
+        [self updateModeEnabled];
     }
 
     if (self.previewCheckbox.state == NSControlStateValueOn && self.allowPreview) {
@@ -309,6 +376,13 @@ NSColor* ThemeColor(ai::int32 componentColor, NSColor* fallback) {
         self.densitySlider.doubleValue = v;
         [self syncDensityFieldFromSlider];
         [self controlChanged:self.densitySlider];
+        return YES;
+    }
+    if (control == self.facetsField) {
+        double v = std::min(6.0, std::max(1.0, self.facetsSlider.doubleValue + delta));
+        self.facetsSlider.doubleValue = v;
+        [self syncFacetsFieldFromSlider];
+        [self controlChanged:self.facetsSlider];
         return YES;
     }
     return NO;

@@ -1,21 +1,13 @@
 // KakuMath.h
 //
-// SDK-independent "grid quantize / pixelate" geometry core, ported 1:1 from
-// the ExtendScript prototype (grid-quantize.jsx): resample each Bezier
-// segment into a fine polyline, snap every sample to the nearest grid
-// corner, then collapse runs of collinear points. No Illustrator headers
-// are used here on purpose, same reasoning as CornerMath.h -- this file/
-// its .cpp can be compiled and sanity-tested standalone before being linked
-// into the actual AILiveEffect plugin.
-//
-// Phase 2 adds: "完全像素化" block/rasterize mode (RasterizeToContours,
-// direct port of the jsx's processPathBlock scanline+boundary-trace
-// algorithm, already validated standalone in Node before being ported
-// here), the "collapse to one block" degenerate fallback (BoundingBoxCells),
-// and ratio-based cell sizing (DeriveEffectiveCell). The AIArt-level
-// compound path construction RasterizeToContours' multi-contour results
-// need lives in KakuPlugin.cpp, not here -- this file stays
-// SDK-independent.
+// SDK-independent geometry core for Kaku's two modes: 像素化 (rasterize a
+// path to a grid, RasterizeToContours) and 多邊形 (replace each curved
+// segment with straight chords, PolygonizeSegments). No Illustrator headers
+// are used here on purpose -- this file/its .cpp can be compiled and
+// sanity-tested standalone before being linked into the actual AILiveEffect
+// plugin. The AIArt-level compound path construction RasterizeToContours'
+// multi-contour results need lives in KakuPlugin.cpp, not here -- this file
+// stays SDK-independent.
 
 #pragma once
 
@@ -41,18 +33,24 @@ struct BezierSeg {
     Vec2 p0, p1, p2, p3;
 };
 
-// 完全像素化 listed first / defaulted to, per the user's explicit choice --
-// 格點吸附 is the secondary option now, not the primary one.
-enum class PixelateMode { kBlock, kOutline };
+// kBlock (像素化) is the default. kPolygon (多邊形) is a second, unrelated
+// algorithm: not grid-based at all, see PolygonizeSegments below. (A third
+// mode, 邊緣吸附/kOutline -- corner-snap to grid, preserving original
+// angles -- existed earlier and was removed entirely at the user's
+// request; SnapToGrid, which existed only to support it, was removed
+// alongside it.)
+enum class PixelateMode { kBlock, kPolygon };
 
 struct GridParams {
-    double density = 3.0;    // samples per cell along a segment; clamped [1,20] by the dialog
+    double density = 3.0;    // samples per cell along a segment; clamped [1,20] by the dialog.
+                              // Unused by kPolygon.
     PixelateMode mode = PixelateMode::kBlock;
     double cellRatio = 8.0;  // cells across the selection's longer side, clamped [1,200] -- the
                               // only cell-sizing mechanism now (fixed-pt sizing was removed: grid
                               // origin is always the selection's own top-left, never document (0,0),
                               // and every path always simplifies collinear runs -- neither is a
-                              // user-facing choice anymore).
+                              // user-facing choice anymore). Unused by kPolygon.
+    int facets = 2;          // kPolygon only: chords per curved segment, clamped [1,6] by the dialog.
 };
 
 // Cell size actually used for processing: the selection's bounding box's
@@ -75,10 +73,6 @@ double SegLength(const BezierSeg& seg);
 // the jsx's `stats.capped`).
 std::vector<Vec2> ResamplePath(const std::vector<BezierSeg>& segs, bool closed,
                                 double spacing, size_t maxPts, bool* hitCap);
-
-// Snap every point to the nearest corner of a `cell`-sized grid anchored at
-// (gx, gy), dropping consecutive duplicates. Mirrors snapAll().
-std::vector<Vec2> SnapToGrid(const std::vector<Vec2>& pts, double cell, double gx, double gy);
 
 // Remove points that lie exactly on the line between their neighbors.
 // Mirrors simplifyCollinear(); if the result would collapse below the
@@ -143,5 +137,19 @@ RasterizeResult RasterizeToContours(const std::vector<Vec2>& polygon, double cel
 // the scanline fill test, which requires filling all of them in one pass.
 RasterizeResult RasterizeCompoundToContours(const std::vector<std::vector<Vec2>>& subpolygons,
                                              double cell, double gx, double gy, bool simplify);
+
+// 多邊形 mode: direct port of Polygonize.jsx's polygonize() -- turns each
+// curved segment into straight chords, at "chamfer 0%" (no corner
+// rounding/beveling, just the raw facet count). Unlike every other function
+// in this file, this is NOT grid-based -- it works directly on the path's own
+// existing segments, not a fine arc-length resample. Each segment that
+// actually curves (its handles aren't coincident with its anchors) gets
+// replaced by `facets` straight chords sampled at t = 1/facets ..
+// (facets-1)/facets; a segment that's already a straight line (both handles
+// sitting exactly on their anchors) is left as a single edge, untouched --
+// this is what keeps existing straight edges crisp instead of needlessly
+// subdividing them. Output points are always plain corners (no handles),
+// same convention as every other mode's output.
+std::vector<Vec2> PolygonizeSegments(const std::vector<BezierSeg>& segs, bool closed, int facets);
 
 } // namespace kaku

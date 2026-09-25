@@ -1,7 +1,7 @@
 // KakuMath.cpp
 // See KakuMath.h. Direct port of resample()/bezierAt()/segLength()/
-// snapAll()/simplifyCollinear() from grid-quantize.jsx -- same formulas,
-// same step/point caps, same collinearity epsilon.
+// simplifyCollinear() from grid-quantize.jsx -- same formulas, same
+// step/point caps, same collinearity epsilon.
 
 #include "KakuMath.h"
 
@@ -55,19 +55,6 @@ std::vector<Vec2> ResamplePath(const std::vector<BezierSeg>& segs, bool closed,
 
     if (!closed && !segs.empty()) out.push_back(segs.back().p3);
     if (hitCap) *hitCap = cap;
-    return out;
-}
-
-std::vector<Vec2> SnapToGrid(const std::vector<Vec2>& pts, double cell, double gx, double gy) {
-    std::vector<Vec2> out;
-    out.reserve(pts.size());
-    for (const auto& p : pts) {
-        double x = std::round((p.x - gx) / cell) * cell + gx;
-        double y = std::round((p.y - gy) / cell) * cell + gy;
-        if (out.empty() || out.back().x != x || out.back().y != y) {
-            out.push_back({x, y});
-        }
-    }
     return out;
 }
 
@@ -461,6 +448,32 @@ RasterizeResult RasterizeCompoundToContours(const std::vector<std::vector<Vec2>>
 
     result.contours = TraceGridBoundary(grid, nCols, nRows, colMin, rowMin, cell, gx, gy, simplify);
     return result;
+}
+
+namespace {
+
+bool NearlyEqual(const Vec2& a, const Vec2& b) {
+    return std::fabs(a.x - b.x) < 1e-6 && std::fabs(a.y - b.y) < 1e-6;
+}
+
+} // namespace
+
+std::vector<Vec2> PolygonizeSegments(const std::vector<BezierSeg>& segs, bool closed, int facets) {
+    std::vector<Vec2> out;
+    if (segs.empty()) return out;
+    if (facets < 1) facets = 1;
+
+    for (const auto& seg : segs) {
+        out.push_back(seg.p0);
+        bool straight = NearlyEqual(seg.p1, seg.p0) && NearlyEqual(seg.p2, seg.p3);
+        if (!straight) {
+            for (int f = 1; f < facets; ++f) {
+                out.push_back(BezierAt(seg, (double)f / facets));
+            }
+        }
+    }
+    if (!closed) out.push_back(segs.back().p3);
+    return out;
 }
 
 } // namespace kaku
