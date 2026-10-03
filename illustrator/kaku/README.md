@@ -51,8 +51,6 @@ Illustrator 的路徑量化特效外掛：把路徑對齊網格變成方塊像�
 
 ![套用前後比較](assets/before-after.png)
 
-![模式切換效果示範](assets/mode-demo.gif)
-
 ## 已知問題
 
 - 只在 macOS 上開發與測試，尚未驗證 Windows。
